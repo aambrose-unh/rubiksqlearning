@@ -1,3 +1,5 @@
+import random
+
 class Agent:
     def __init__(self, alpha=1.0, epsilon=0.05, gamma=0.8, numTraining = 10):
         """
@@ -51,7 +53,7 @@ class Agent:
         """
         return ('NOT DEFINED')
 
-class ReinforcementAgent(ValueEstimationAgent):
+class ReinforcementAgent(Agent):
     """
       Abstract Reinforcemnt Agent: A ValueEstimationAgent
             which estimates Q-Values (as well as policies) from experience
@@ -87,6 +89,7 @@ class ReinforcementAgent(ValueEstimationAgent):
           obtain legal actions for a state
         """
         return self.actionFn(state)
+        # return state.actionList
 
     def observeTransition(self, state,action,nextState,deltaReward):
         """
@@ -147,25 +150,25 @@ class ReinforcementAgent(ValueEstimationAgent):
         self.alpha = float(alpha)
         self.discount = float(gamma)
 
-    ################################
-    # Controls needed for Crawler  #
-    ################################
-    def setEpsilon(self, epsilon):
-        self.epsilon = epsilon
+    # ################################
+    # # Controls needed for Crawler  #
+    # ################################
+    # def setEpsilon(self, epsilon):
+    #     self.epsilon = epsilon
 
-    def setLearningRate(self, alpha):
-        self.alpha = alpha
+    # def setLearningRate(self, alpha):
+    #     self.alpha = alpha
 
-    def setDiscount(self, discount):
-        self.discount = discount
+    # def setDiscount(self, discount):
+    #     self.discount = discount
 
-    def doAction(self,state,action):
-        """
-            Called by inherited class when
-            an action is taken in a state
-        """
-        self.lastState = state
-        self.lastAction = action
+    # def doAction(self,state,action):
+    #     """
+    #         Called by inherited class when
+    #         an action is taken in a state
+    #     """
+    #     self.lastState = state
+    #     self.lastAction = action
 
     # ###################
     # # Pacman Specific #
@@ -377,14 +380,18 @@ class ApproximateQAgent(QLearningAgent):
        and update.  All other QLearningAgent functions
        should work as is.
     """
-    def __init__(self):
-        def getFeatures(self, state, action):
+
+    def getFeatures(self, state, action):
             # feats = util.Counter()
             feats = dict()
+            
             feats[(state,action)] = 1.0
             return feats
+
+    def __init__(self):
         # self.featExtractor = getFeatures()
-        self.weights = util.Counter()
+        # self.weights = util.Counter()
+        self.weights = dict()
 
     def getWeights(self):
         return self.weights

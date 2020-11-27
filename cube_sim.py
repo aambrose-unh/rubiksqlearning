@@ -27,6 +27,41 @@ class cube:
         self.actionList = [self.clockwise, self.counterclockwise,
                             self.forward, self.backward]
 
+    
+    def update_cubeState(self):
+        self.cubeState = np.array([self.front,self.top,self.bottom,
+                                self.left,self.right,self.back]
+                                ).reshape(6,self.size,self.size)
+    
+    def getActions(self):
+        feat = self.get_features()
+        if feat[-1] == 1:
+            return list()
+        return self.actionList
+
+    #===============================================
+    # Get Features
+    #===============================================
+
+    def get_features(self):
+        feat_vector = []
+        tot_cpf = 0
+        one_color_face = 0
+        for face in self.cubeState:
+            # calc colors per face
+            num_col = len(np.unique(face))
+            tot_cpf += num_col
+            # Add 1/color for that face to feature vector
+            feat_vector.append(1/num_col)
+            # get total single colored faces
+            if num_col == 1:
+                one_color_face += 1
+        # Add 1 / average colors per face
+        feat_vector.append(1/(tot_cpf/6))
+        # Add number of single colored faces (divided by 6 to keep same scale as other features)
+        feat_vector.append(one_color_face/6)
+        return feat_vector
+
     def copy(self):
         # cubeCopy = cube()
         # cubeCopy.front = self.front
@@ -85,6 +120,7 @@ class cube:
             # print('Action - ',self.actionList[a])
             self.actionList[a]()
 
+        self.update_cubeState()
         # return "To be implemented"
 
     # Rotate front face clockwise. 
@@ -106,7 +142,7 @@ class cube:
 
         # Rotate main face
         self.front = np.rot90(refState.front,axes=(1,0))
-
+        self.update_cubeState()
         # return "To be implemented"
 
 
@@ -126,7 +162,7 @@ class cube:
 
         # Rotate main face
         self.front = np.rot90(refState.front, axes=(0,1))
-
+        self.update_cubeState()
         # return "To be implemented"
 
 
@@ -150,7 +186,7 @@ class cube:
 
         # Rotate main face
         self.left = np.rot90(refState.left, axes=(1,0))
-
+        self.update_cubeState()
         # return "To be implemented"
 
     # Rotate lefthand square backward
@@ -166,6 +202,6 @@ class cube:
 
         # Rotate main face
         self.left = np.rot90(refState.left, axes=(0,1))
-
+        self.update_cubeState()
 
         # return "To be implemented"
