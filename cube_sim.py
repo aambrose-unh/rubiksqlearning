@@ -59,7 +59,7 @@ class cube:
         # Add 1 / average colors per face
         feat_vector['inv_avg_cpf'] = (1/(tot_cpf/6))
         # Add number of single colored faces (divided by 6 to keep same scale as other features)
-        # feat_vector['one_color_faces'] = (one_color_face/6)
+        feat_vector['one_color_faces'] = (one_color_face/6)
 
         # MAYBE ADD INTERACTION EFFECTS??????????????
 
