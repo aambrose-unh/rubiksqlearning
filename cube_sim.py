@@ -27,15 +27,42 @@ class cube:
         self.actionList = [self.clockwise, self.counterclockwise,
                             self.forward, self.backward]
 
+        self.al = [cube.clockwise,cube.counterclockwise,cube.forward,cube.backward]
+
+        self.faces = {'front':self.front,'top':self.top,'bottom':self.bottom,
+                                'left':self.left,'right':self.right,'back':self.back}
+    
+    def update_cubeState(self):
+        self.cubeState = np.array([self.front,self.top,self.bottom,
+                                self.left,self.right,self.back]
+                                ).reshape(6,self.size,self.size)
+        self.faces = {'front':self.front,'top':self.top,'bottom':self.bottom,
+                                'left':self.left,'right':self.right,'back':self.back}
+
+    #===============================================
+    # Get Features
+    #===============================================
+
+    def get_features(self):
+        feat_vector = dict()
+        tot_cpf = 0
+        one_color_face = 0
+        for face in self.faces:
+            # calc colors per face
+            num_col = len(np.unique(self.faces[face]))
+            tot_cpf += num_col
+            # Add 1/color for that face to feature vector
+            feat_vector[f'inv_cpf_{face}'] = (1/num_col)
+            # get total single colored faces
+            if num_col == 1:
+                one_color_face += 1
+        # Add 1 / average colors per face
+        # feat_vector['inv_avg_cpf'] = (1/(tot_cpf/6))
+        # Add number of single colored faces (divided by 6 to keep same scale as other features)
+        feat_vector['one_color_faces'] = (one_color_face/6)
+        return feat_vector
+
     def copy(self):
-        # cubeCopy = cube()
-        # cubeCopy.front = self.front
-        # cubeCopy.top = self.top
-        # cubeCopy.bottom = self.bottom
-        # cubeCopy.left = self.left
-        # cubeCopy.right = self.right
-        # cubeCopy.back = self.back
-        # return copy.deepcopy(cubeCopy)
         return copy.deepcopy(self)
 
     def getFace(self,cubeState,face):
@@ -85,6 +112,7 @@ class cube:
             # print('Action - ',self.actionList[a])
             self.actionList[a]()
 
+        self.update_cubeState()
         # return "To be implemented"
 
     # Rotate front face clockwise. 
@@ -106,7 +134,7 @@ class cube:
 
         # Rotate main face
         self.front = np.rot90(refState.front,axes=(1,0))
-
+        self.update_cubeState()
         # return "To be implemented"
 
 
@@ -126,7 +154,7 @@ class cube:
 
         # Rotate main face
         self.front = np.rot90(refState.front, axes=(0,1))
-
+        self.update_cubeState()
         # return "To be implemented"
 
 
@@ -150,7 +178,7 @@ class cube:
 
         # Rotate main face
         self.left = np.rot90(refState.left, axes=(1,0))
-
+        self.update_cubeState()
         # return "To be implemented"
 
     # Rotate lefthand square backward
@@ -166,6 +194,6 @@ class cube:
 
         # Rotate main face
         self.left = np.rot90(refState.left, axes=(0,1))
+        self.update_cubeState()
 
-
-        return "To be implemented"
+        # return "To be implemented"
