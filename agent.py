@@ -111,6 +111,7 @@ class ApproximateQAgent():
         self.epsilon = float(epsilon)
         self.alpha = float(alpha)
         self.discount = float(gamma)
+        self.stateCounter = dict()
 
         # self.featExtractor = getFeatures()
         # self.weights = util.Counter()
@@ -118,8 +119,11 @@ class ApproximateQAgent():
         #     'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1,
         #     'inv_avg_cpf': .1, 'one_color_faces': .1}
         # self.weights = {'inv_avg_cpf': .1, 'one_color_faces': .1}
+        # self.weights = {'inv_cpf_front': .1, 'inv_cpf_top': .1, 'inv_cpf_bottom': .1,
+        #     'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1, 'one_color_faces': .1}
         self.weights = {'inv_cpf_front': .1, 'inv_cpf_top': .1, 'inv_cpf_bottom': .1,
-            'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1, 'one_color_faces': .1}
+            'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1,
+            'inv_avg_cpf': .1}
         # Use util.counter() to initialize Q-values
         self.qvalues = dict()
 
@@ -138,7 +142,8 @@ class ApproximateQAgent():
 
     def getActions(self, state):
         feat = state.get_features()
-        if feat['one_color_faces'] == 1:
+        # if feat['one_color_faces'] == 1:
+        if feat['inv_avg_cpf'] == 1:
             return list()
         return state.al
 
@@ -248,10 +253,12 @@ class ApproximateQAgent():
         if len(legalActions) > 0:
             # Boolean to decide if taking a random action or not
             take_random = random.random() < self.epsilon
+            # print(take_random)
             if take_random == True:
                 action = random.choice(legalActions)
             else:
                 action = self.getPolicy(state)
+            # print(action)
         return action
 
     def update(self, state, action, nextState, reward):
@@ -267,27 +274,27 @@ class ApproximateQAgent():
 
         v = self.getValue(nextState)
 
-        print('\nNextState during update - after V') ### MODIFIED DURING Q
-        nextState.showCube()
+        # print('\nNextState during update - after V') ### MODIFIED DURING Q
+        # nextState.showCube()
 
         q = self.getQValue(state,action)
 
-        print('\nNextState during update - after Q') ### MODIFIED DURING Q
-        nextState.showCube()
+        # print('\nNextState during update - after Q') ### MODIFIED DURING Q
+        # nextState.showCube()
 
         difference = (reward + self.discount * self.getValue(nextState)) - self.getQValue(state,action)
         # print('reward',reward)
         # print('v:',self.getValue(nextState))
         # print('q:',self.getQValue(state,action))
-        print('\nNextState during update - before get features') 
-        nextState.showCube()
+        # print('\nNextState during update - before get features') 
+        # nextState.showCube()
         # state, featureVector = self.getFeatures(state,action)
         featureVector = self.getFeatures(state,action)
         # state = orig_cube
         # print('\nState during update')
         # state.showCube()
-        print('\nNextState during update - after get features')
-        nextState.showCube()
+        # print('\nNextState during update - after get features')
+        # nextState.showCube()
         # print('FV:',featureVector)
         for feature in featureVector:
             # print('feature',feature)
@@ -328,21 +335,25 @@ class ApproximateQAgent():
             prev_score = -.1
             while not self.isGoal(c):                
                 # Reward is living cost unless terminal state then reward is 100
-                # if move % 5000 == 0:
-                print('On Training Move:',move)
-                print('\nC to start')
-                c.showCube()
-                # print('Reward:',prev_score)
-                print('Weights',self.weights)
+                if move % 5000 == 0:
+                    print('\nOn Training Move:',move)
+                    # print('\nC to start')
+                    # c.showCube()
+                    c.showCube()
+                    print('\nWeights',self.weights)
+                    print('Reward:',prev_score)
 
-                action = self.getPolicy(c)
+                if move > 300000:
+                    return "Taking too long"
+
+                action = self.getAction(c)
                 # c,nextState = self.getNextState(c,action)
                 nextState = self.getNextState(c,action)
 
                 # print('\nC after getnext')
-                c.showCube()
-                print('\nNext State')
-                nextState.showCube()
+                # c.showCube()
+                # print('\nNext State')
+                # nextState.showCube()
                 # if move % 5000 == 0:
                 #     print('Cube Now')
                 #     c.showCube()
@@ -350,21 +361,22 @@ class ApproximateQAgent():
                 #     nextState.showCube()
                 # Reward is difference between last state and this state
                 # Score is sum of features
-                # reward = sum(c.get_features().values()) - prev_score
-                reward = -.1
+                reward = c.get_features()['inv_avg_cpf'] - prev_score -.1
+                # reward = -.1
                 if self.isGoal(nextState):
                     reward = 100
                 self.update(c, action, nextState, reward)
                 # if move % 5000 == 0:
                     # print('Updated Weights',self.weights)
-                # prev_score = sum(c.get_features().values())
+                prev_score = c.get_features()['inv_avg_cpf']
                 # print('\nNext State right before assignment')
-                nextState.showCube()
+                # nextState.showCube()
                 c = nextState
                 move+=1
 
-                print('\nC = nextState')
-                c.showCube()
+                # print('\nC = nextState')
+                # if move >= 5000:
+                #     c.showCube()
 
 
     def solve(self,state,verbose = False, move_update=10, ret_moves=False):
@@ -392,5 +404,5 @@ class ApproximateQAgent():
 
         
 
-a = ApproximateQAgent(numTraining=100, epsilon=0.9, alpha=0.1, gamma=.95)
+a = ApproximateQAgent(numTraining=10, epsilon=.5, alpha=0.25, gamma=.9)
 a.train()
