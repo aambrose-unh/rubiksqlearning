@@ -1,4 +1,5 @@
 import copy
+import itertools
 import numpy as np
 
 # Class to define 2x2 rubiks cube
@@ -24,10 +25,11 @@ class cube:
                                 self.left,self.right,self.back]
                                 ).reshape(6,size,size)
 
-        self.actionList = [self.clockwise, self.counterclockwise,
-                            self.forward, self.backward]
+        self.actionList = [self.clockwise, self.counterclockwise, self.forward,
+                        self.backward, self.toLeft, self.toRight]
 
-        self.al = [cube.clockwise,cube.counterclockwise,cube.forward,cube.backward]
+        self.al = [cube.clockwise,cube.counterclockwise,cube.forward,
+                    cube.backward,cube.toLeft,cube.toRight]
 
         self.faces = {'front':self.front,'top':self.top,'bottom':self.bottom,
                                 'left':self.left,'right':self.right,'back':self.back}
@@ -61,7 +63,19 @@ class cube:
         # Add number of single colored faces (divided by 6 to keep same scale as other features)
         feat_vector['one_color_faces'] = (one_color_face/6)
 
-        # MAYBE ADD INTERACTION EFFECTS??????????????
+        # Interaction Features
+        for i in itertools.combinations(self.faces,r=2):
+            num_col0 = 1/len(np.unique(self.faces[i[0]]))
+            num_col1 = 1/len(np.unique(self.faces[i[1]]))
+            feat_vector[i[0]+'_'+i[1]] = num_col0*num_col1
+
+        # # MAYBE ADD INTERACTION EFFECTS??????????????
+        # feat_vector['ft'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
+        # feat_vector['fbo'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
+        # feat_vector['fbo'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
+        # feat_vector['fl'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
+        # feat_vector['fr'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
+        # feat_vector['fba'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
 
 
         return feat_vector
@@ -200,4 +214,43 @@ class cube:
         self.left = np.rot90(refState.left, axes=(0,1))
         self.update_cubeState()
 
+        # return "To be implemented"
+
+    # Rotate top square to the right
+    def toRight(self):
+        # Only 2x2 so only need to operate on left face. This is
+        # equivalent to doing the opposite rotation on the right face.
+
+        '''
+        Modifies cubeState in place to rotate left face forward (top-left corner
+        rotating towards user and downward)
+        '''
+
+        # Copy array to keep as reference
+        refState = self.copy()
+        # Rotate outer
+        self.front[0,:] = refState.left[0,:]
+        self.left[0,:] = refState.back[0,:]
+        self.back[0,:] = refState.right[0,:]
+        self.right[0,:] = refState.front[0,:]
+
+        # Rotate main face
+        self.top = np.rot90(refState.top, axes=(1,0))
+        self.update_cubeState()
+        # return "To be implemented"
+
+    # Rotate top square to the left
+    def toLeft(self):
+
+        # Copy array to keep as reference
+        refState = self.copy()
+        # Rotate outer
+        self.front[0,:] = refState.right[0,:]
+        self.right[0,:] = refState.back[0,:]
+        self.back[0,:] = refState.left[0,:]
+        self.left[0,:] = refState.front[0,:]
+
+        # Rotate main face
+        self.top = np.rot90(refState.top, axes=(0,1))
+        self.update_cubeState()
         # return "To be implemented"
