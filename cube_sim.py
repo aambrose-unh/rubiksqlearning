@@ -9,7 +9,6 @@ class cube:
     Cube state is defined by 6 faces, each a 2 x 2 matrix 
 
     '''
-
     def __init__(self,size=2):
 
         self.size = size
