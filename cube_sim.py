@@ -45,45 +45,6 @@ class cube:
         self.faces = {'front':self.front,'top':self.top,'bottom':self.bottom,
                                 'left':self.left,'right':self.right,'back':self.back}
 
-    #===============================================
-    # Get Features
-    #===============================================
-
-    def get_features(self):
-        '''
-        Return features of the current cube state
-        '''
-        feat_vector = dict()
-        tot_cpf = 0
-        one_color_face = 0
-        for face in self.faces:
-            # calc colors per face
-            num_col = len(np.unique(self.faces[face]))
-            tot_cpf += num_col
-            # Add 1/color for that face to feature vector
-            feat_vector[f'inv_cpf_{face}'] = (1/num_col)
-            # get total single colored faces
-            if num_col == 1:
-                one_color_face += 1
-        # Add 1 / average colors per face
-        feat_vector['inv_avg_cpf'] = (1/(tot_cpf/6))
-        # Add number of single colored faces (divided by 6 to keep same scale as other features)
-        feat_vector['one_color_faces'] = (one_color_face/6)
-
-        # # Interaction Features
-        # for i in itertools.combinations(self.faces,r=2):
-        #     num_col0 = 1/len(np.unique(self.faces[i[0]]))
-        #     num_col1 = 1/len(np.unique(self.faces[i[1]]))
-        #     feat_vector[i[0]+'_'+i[1]] = num_col0*num_col1
-
-        # Unique colors amongst paired faces
-        for i in itertools.combinations(self.faces,r=2):
-            feat_vector[i[0]+'_'+i[1]] = 1/len(np.unique(np.append(self.faces[i[0]],self.faces[i[1]])))
-
-        # Maybe check for patterns of previous moves????
-
-        return feat_vector
-
     def copy(self):
         '''Helper function to make deep copy of cube'''
         return copy.deepcopy(self)

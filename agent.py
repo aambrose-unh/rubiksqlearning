@@ -2,15 +2,14 @@ import random
 import time
 import pickle
 from pathlib import Path
+import numpy as np
+import itertools
 import cube_sim
 
 class ApproximateQAgent():
     """
        ApproximateQLearningAgent
     """
-
-#################################
-
     def __init__(self, numTraining=100, epsilon=0.9, alpha=0.01, gamma=.9, e_decay=.00001):
         """
         alpha    - learning rate
@@ -24,19 +23,11 @@ class ApproximateQAgent():
         self.e_decay = float(e_decay)
         self.alpha = float(alpha)
         self.discount = float(gamma)
-        self.stateCounter = dict()
+        # self.stateCounter = dict()
         self.metadata = dict()
 
-        # self.weights = {'inv_cpf_front': .1, 'inv_cpf_top': .1, 'inv_cpf_bottom': .1,
-        #     'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1,
-        #     'inv_avg_cpf': .1, 'one_color_faces': .1}
-        # self.weights = {'inv_avg_cpf': .1, 'one_color_faces': .1}
-        # self.weights = {'inv_cpf_front': .1, 'inv_cpf_top': .1, 'inv_cpf_bottom': .1,
-        #     'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1, 'one_color_faces': .1}
-        # self.weights = {'inv_cpf_front': .1, 'inv_cpf_top': .1, 'inv_cpf_bottom': .1,
-        #     'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1,
-        #     'inv_avg_cpf': .1}
-        self.weights = {'inv_cpf_front': 0.1, 'inv_cpf_top': 0.1, 'inv_cpf_bottom': 0.1, 'inv_cpf_left': 0.1, 'inv_cpf_right': 0.1, 'inv_cpf_back': 0.1, 'inv_avg_cpf': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1, 'one_color_faces': .1}
+        # self.weights = {'inv_cpf_front': 0.1, 'inv_cpf_top': 0.1, 'inv_cpf_bottom': 0.1, 'inv_cpf_left': 0.1, 'inv_cpf_right': 0.1, 'inv_cpf_back': 0.1, 'inv_avg_cpf': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1, 'one_color_faces': .1}
+        self.weights = {'inv_avg_cpf': 0.1, 'one_color_faces': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1}
         # ALL FEATURES
         # self.weights = {'inv_cpf_front': 0.1, 'inv_cpf_top': 0.1, 'inv_cpf_bottom': 0.1, 'inv_cpf_left': 0.1, 'inv_cpf_right': 0.1, 'inv_cpf_back': 0.1, 'inv_avg_cpf': 0.1, 'one_color_faces': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1, 'flt': 0.1, 'frt': 0.1, 'flb': 0.1, 'frb': 0.1, 'blt': 0.1, 'brt': 0.1, 'blb': 0.1, 'brb': 0.1}
 
@@ -56,24 +47,53 @@ class ApproximateQAgent():
         return False
 
     def getActions(self, state):
-        feat = state.get_features()
+        feat = self.getFeatures(state)
         # if feat['one_color_faces'] == 1:
         if feat['inv_avg_cpf'] == 1:
             return list()
         return state.al
 
-    def getFeatures(self, state, action):
-            # create a copy to perform action on to get new features after action
-            copy = state.copy()
+    def getFeatures(self, state, action=None):
+        '''
+        Return features of the cube state after action
+        '''
+        # create a copy to perform action on to get new features after action
+        copy = state.copy()
+        if action != None:
             # perform action on copy
             action(copy)
-            # get features
-            # feats[(state,action)] = 
-            # return orig_cube,state.get_features()
 
-            # UPDATE BASED ON P1 past actions (attribute and in update function)
+        feat_vector = dict()
+        tot_cpf = 0
+        one_color_face = 0
+        for face in copy.faces:
+            # calc colors per face
+            num_col = len(np.unique(copy.faces[face]))
+            tot_cpf += num_col
+            # Add 1/color for that face to feature vector
+            # feat_vector[f'inv_cpf_{face}'] = (1/num_col)
+            # get total single colored faces
+            if num_col == 1:
+                one_color_face += 1
+        # Add 1 / average colors per face
+        feat_vector['inv_avg_cpf'] = (1/(tot_cpf/6))
+        # Add number of single colored faces (divided by 6 to keep same scale as other features)
+        feat_vector['one_color_faces'] = (one_color_face/6)
 
-            return copy.get_features()
+        # # Interaction Features
+        # for i in itertools.combinations(self.faces,r=2):
+        #     num_col0 = 1/len(np.unique(self.faces[i[0]]))
+        #     num_col1 = 1/len(np.unique(self.faces[i[1]]))
+        #     feat_vector[i[0]+'_'+i[1]] = num_col0*num_col1
+
+        # Unique colors amongst paired faces
+        for i in itertools.combinations(copy.faces,r=2):
+            feat_vector[i[0]+'_'+i[1]] = 1/len(np.unique(np.append(copy.faces[i[0]],copy.faces[i[1]])))
+
+        # Maybe check for patterns of previous moves????
+        # UPDATE BASED ON P1 past actions (attribute and in update function)
+
+        return feat_vector
 
     def getWeights(self):
         return self.weights
@@ -163,10 +183,6 @@ class ApproximateQAgent():
         # Epsilon decay
         if self.epsilon > .1:
             self.epsilon = self.epsilon ** (1+self.e_decay)
-        # self.stateCounter += 1
-        # if self.stateCounter % 10000 == 0:
-        #     self.epsilon *= .9
-
         # With prob epsilon, take a random action
         if len(legalActions) > 0:
             # Boolean to decide if taking a random action or not
@@ -194,24 +210,12 @@ class ApproximateQAgent():
         for feature in self.weights: 
             self.weights[feature] / max_weight
 
-        # Update state/action count
-        if (state,action) in self.stateCounter:
-            self.stateCounter[(state,action)] += 1
-        else:
-            self.stateCounter[(state,action)] = 1
-
         # Update past actions list
         # self.p1 = {'p1_clockwise':0,'p1_counterclockwise':0,'p1_forward':0,'p1_backward':0,
         #             'p1_toLeft':0,'p1_toRight':0,}
 
-        # return ('NOT DEFINED')
 
     def getNextState(self, state, action):
-        # # create a copy to perform action on to get new features after action
-        # orig_cube = state.copy()
-        # # perform action on copy
-        # action()
-        # return orig_cube,state
         # create a copy to perform action on to get new features after action
         copy = state.copy()
         # perform action on copy
@@ -268,7 +272,7 @@ class ApproximateQAgent():
                     print('\nReward: {:.3f}'.format(reward))
                     print('Weights: {}'.format(self.weights))
                     print('Espilon: {:.3f}'.format(self.epsilon))
-                    print('Number of States visited: {}\n'.format(len(self.stateCounter)))
+                    # print('Number of States visited: {}\n'.format(len(self.stateCounter)))
 
 
                 if move > 10000000:
@@ -278,20 +282,9 @@ class ApproximateQAgent():
                 # c,nextState = self.getNextState(c,action)
                 nextState = self.getNextState(c,action)
 
-                # print('\nC after getnext')
-                # c.showCube()
-                # print('\nNext State')
-                # nextState.showCube()
-                # if move % 5000 == 0:
-                #     print('Cube Now')
-                #     c.showCube()
-                #     print('Next State')
-                #     nextState.showCube()
-                # Reward is difference between last state and this state
-                # Score is sum of features
                 # reward = c.get_features()['one_color_faces'] - prev_score - .1
                 # reward = c.get_features()['inv_avg_cpf']**2 - prev_score - .1
-                reward = c.get_features()['inv_avg_cpf'] + c.get_features()['one_color_faces'] - .1
+                reward = self.getFeatures(c)['inv_avg_cpf'] + self.getFeatures(c)['one_color_faces'] - .1
                 # reward = -.1
                 if self.isGoal(nextState):
                     print('\nGOAL HERE!!!!')
@@ -299,8 +292,6 @@ class ApproximateQAgent():
                     nextState.showCube()
                     reward = 50
                 self.update(c, action, nextState, reward)
-                # if move % 5000 == 0:
-                    # print('Updated Weights',self.weights)
                 # prev_score = c.get_features()['one_color_faces'] + c.get_features()['inv_avg_cpf']
                 # prev_score = c.get_features()['one_color_faces']
                 # prev_score = c.get_features()['inv_avg_cpf']**2
@@ -312,11 +303,11 @@ class ApproximateQAgent():
             # Save model after each completed training episode
             print('Saving model')
             self.metadata[f'ep_{sess}'] = {'MovesToGoal':move-1,'TotalRunTime':time.time() - start,'EpisodeRunTime':time.time() - train_start}
-            self.save(fname=f'{save_prefix}_episode_{sess}',outpath=Path('./outpath'))
+            self.save(fname=f'{save_prefix}_episode_{sess}',outpath=Path('./output'))
 
 
     def solve(self,state,verbose = False, move_update=10, ret_moves=False):
-        c = state
+        c = state.copy()
         print('Starting State:')
         c.showCube()
         move_list = []
@@ -330,7 +321,7 @@ class ApproximateQAgent():
             c,nextState = self.getNextState(c,action)
             c = nextState
             if ret_moves == True:
-                move_list.append(c)
+                move_list.append(action)
             move+=1
             
         print('SOLVED:')
