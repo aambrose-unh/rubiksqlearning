@@ -2,101 +2,12 @@ import random
 import time
 import cube_sim
 
-#     def update(self, state, action, nextState, reward):
-#         """
-#                 This class will call this function, which you write, after
-#                 observing a transition and reward
-#         """
-#         return ('NOT DEFINED')
-
-#     ####################################
-#     #    Read These Functions          #
-#     ####################################
-
-#     def observeTransition(self, state,action,nextState,deltaReward):
-#         """
-#             Called by environment to inform agent that a transition has
-#             been observed. This will result in a call to self.update
-#             on the same arguments
-
-#             NOTE: Do *not* override or call this function
-#         """
-#         self.episodeRewards += deltaReward
-#         self.update(state,action,nextState,deltaReward)
-
-#     def startEpisode(self):
-#         """
-#           Called by environment when new episode is starting
-#         """
-#         self.lastState = None
-#         self.lastAction = None
-#         self.episodeRewards = 0.0
-
-#     def stopEpisode(self):
-#         """
-#           Called by environment when episode is done
-#         """
-#         if self.episodesSoFar < self.numTraining:
-#             self.accumTrainRewards += self.episodeRewards
-#         else:
-#             self.accumTestRewards += self.episodeRewards
-#         self.episodesSoFar += 1
-#         if self.episodesSoFar >= self.numTraining:
-#             # Take off the training wheels
-#             self.epsilon = 0.0    # no exploration
-#             self.alpha = 0.0      # no learning
-
-#     def isInTraining(self):
-#         return self.episodesSoFar < self.numTraining
-
-#     def isInTesting(self):
-#         return not self.isInTraining()
-
-
-# ####################
-
-#     def getQValue(self, state, action):
-#         """
-#           Returns Q(state,action)
-#           Should return 0.0 if we have never seen a state
-#           or the Q node value otherwise
-#         """
-#         "*** YOUR CODE HERE ***"
-#         if (state,action) not in self.qvalues:
-#             self.qvalues[(state,action)] = 0.0
-#         return self.qvalues[(state,action)]
-
-
 class ApproximateQAgent():
     """
        ApproximateQLearningAgent
-
-       You should only have to overwrite getQValue
-       and update.  All other QLearningAgent functions
-       should work as is.
-    """
-
-    """
-      Abstract Reinforcemnt Agent: A ValueEstimationAgent
-            which estimates Q-Values (as well as policies) from experience
-            rather than a model
-
-        What you need to know:
-                    - The environment will call
-                      observeTransition(state,action,nextState,deltaReward),
-                      which will call update(state, action, nextState, deltaReward)
-                      which you should override.
-        - Use self.getLegalActions(state) to know which actions
-                      are available in a state
     """
 
 #################################
-
-    # def getFeatures(self, state, action):
-    #         # feats = util.Counter()
-    #         feats = dict()
-    #         feats[(state,action)] = 1.0
-    #         return feats
 
     def __init__(self, numTraining=100, epsilon=0.9, alpha=0.01, gamma=.9, e_decay=.00001):
         """
@@ -105,9 +16,7 @@ class ApproximateQAgent():
         gamma    - discount factor
         numTraining - number of training episodes, i.e. no learning after these many episodes
         """
-        self.episodesSoFar = 0
-        self.accumTrainRewards = 0.0
-        self.accumTestRewards = 0.0
+
         self.numTraining = int(numTraining)
         self.epsilon = float(epsilon)
         self.e_decay = float(e_decay)
@@ -159,6 +68,9 @@ class ApproximateQAgent():
             # get features
             # feats[(state,action)] = 
             # return orig_cube,state.get_features()
+
+            # UPDATE BASED ON P1 past actions (attribute and in update function)
+
             return copy.get_features()
 
     def getWeights(self):
@@ -170,10 +82,7 @@ class ApproximateQAgent():
           where * is the dotProduct operator
         """
         # Get dictionary of features
-        # print('Action in getqval',action)
-        # state,featureVector = self.getFeatures(state,action)
         featureVector = self.getFeatures(state,action)
-        # state=orig_cube
         # Get dictionary mapping features to weights
         weightVector = self.getWeights()
         sum = 0
@@ -182,7 +91,6 @@ class ApproximateQAgent():
         for feature in featureVector:
             sum += weightVector[feature] * featureVector[feature]
         return sum
-        # return ('NOT DEFINED')
 
     def computeActionFromQValues(self, state):
         """
@@ -193,12 +101,10 @@ class ApproximateQAgent():
         "*** YOUR CODE HERE ***"
         # Get list of legal actions
         actions = self.getLegalActions(state)
-        # print(actions)
         # Compute Q-values for each possible action and take max
         # max Q(s',a')
         max_action = [(None,-999999)]
         for action in actions:
-            # print('ON ',action)
             # get current qvalue of s from taking action
             val = self.getQValue(state,action)
             # if the current action has a higher qval than the current max,
@@ -211,7 +117,6 @@ class ApproximateQAgent():
                 max_action.append((action,val))
         # if more than one action results in max qvalue - choose one randomly
         action_to_return = random.choice(max_action)[0]
-        # print('Returning',action_to_return)
         return action_to_return
 
     def computeValueFromQValues(self, state):
@@ -278,48 +183,24 @@ class ApproximateQAgent():
         """
         # w_i = w_i + learning_rate * difference * f_i(s,a)
         # difference = [R + discount * max Q(s',a')] - Q(s,a)
-
-
-        # print('\nNextState during update - before difference') ### MODIFIED BETWEEN UPDATE CALL AND THIS POINT
-        # nextState.showCube()
-
-        # v = self.getValue(nextState)
-
-        # print('\nNextState during update - after V') ### MODIFIED DURING Q
-        # nextState.showCube()
-
-        # q = self.getQValue(state,action)
-
-        # print('\nNextState during update - after Q') ### MODIFIED DURING Q
-        # nextState.showCube()
-
         difference = (reward + self.discount * self.getValue(nextState)) - self.getQValue(state,action)
-        # print('reward',reward)
-        # print('v:',self.getValue(nextState))
-        # print('q:',self.getQValue(state,action))
-        # print('\nNextState during update - before get features') 
-        # nextState.showCube()
-        # state, featureVector = self.getFeatures(state,action)
         featureVector = self.getFeatures(state,action)
-        # state = orig_cube
-        # print('\nState during update')
-        # state.showCube()
-        # print('\nNextState during update - after get features')
-        # nextState.showCube()
-        # print('FV:',featureVector)
         for feature in featureVector:
-            # print('feature',feature)
-            # print('weights:',self.weights[feature])
-            # print('feature val',featureVector[feature])
             self.weights[feature] = self.weights[feature] + self.alpha*difference*featureVector[feature]
         # Normalize to prevent divergence?
         max_weight = max(self.weights.values())
         for feature in self.weights: 
             self.weights[feature] / max_weight
 
+        # Update state/action count
+        self.qvalues[(state)]
+
+        # CHECK HOW CORNERS ARE GETTING MESSED UP?????????!!!!!!!
+        ############### HOW ARE SAME COLORS ADJACENT, CORNERS SHOULD NOT CHANGE
+
         # Update past actions list
-        self.p1 = {'p1_clockwise':0,'p1_counterclockwise':0,'p1_forward':0,'p1_backward':0,
-                    'p1_toLeft':0,'p1_toRight':0,}
+        # self.p1 = {'p1_clockwise':0,'p1_counterclockwise':0,'p1_forward':0,'p1_backward':0,
+        #             'p1_toLeft':0,'p1_toRight':0,}
 
         # return ('NOT DEFINED')
 

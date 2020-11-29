@@ -69,15 +69,15 @@ class cube:
             num_col1 = 1/len(np.unique(self.faces[i[1]]))
             feat_vector[i[0]+'_'+i[1]] = num_col0*num_col1
 
-        # Corners
-        feat_vector['flt'] = len(np.unique([self.front[0,0],self.left[0,1],self.top[1,0]]))/3
-        feat_vector['frt'] = len(np.unique([self.front[0,1],self.right[0,0],self.top[1,1]]))/3
-        feat_vector['flb'] = len(np.unique([self.front[1,0],self.left[1,1],self.bottom[0,0]]))/3
-        feat_vector['frb'] = len(np.unique([self.front[1,1],self.right[1,0],self.bottom[0,1]]))/3
-        feat_vector['blt'] = len(np.unique([self.back[0,1],self.left[0,0],self.top[0,0]]))/3
-        feat_vector['brt'] = len(np.unique([self.back[0,0],self.right[0,1],self.top[0,1]]))/3
-        feat_vector['blb'] = len(np.unique([self.back[1,1],self.left[1,0],self.bottom[1,0]]))/3
-        feat_vector['brb'] = len(np.unique([self.back[1,0],self.right[1,1],self.bottom[1,1]]))/3
+        # # Corners
+        # feat_vector['flt'] = len(np.unique([self.front[0,0],self.left[0,1],self.top[1,0]]))/3
+        # feat_vector['frt'] = len(np.unique([self.front[0,1],self.right[0,0],self.top[1,1]]))/3
+        # feat_vector['flb'] = len(np.unique([self.front[1,0],self.left[1,1],self.bottom[0,0]]))/3
+        # feat_vector['frb'] = len(np.unique([self.front[1,1],self.right[1,0],self.bottom[0,1]]))/3
+        # feat_vector['blt'] = len(np.unique([self.back[0,1],self.left[0,0],self.top[0,0]]))/3
+        # feat_vector['brt'] = len(np.unique([self.back[0,0],self.right[0,1],self.top[0,1]]))/3
+        # feat_vector['blb'] = len(np.unique([self.back[1,1],self.left[1,0],self.bottom[1,0]]))/3
+        # feat_vector['brb'] = len(np.unique([self.back[1,0],self.right[1,1],self.bottom[1,1]]))/3
 
         # Maybe check for patterns of previous moves????
 
@@ -149,9 +149,9 @@ class cube:
         refState = self.copy()
         # Rotate outer
         self.left[:,1] = refState.bottom[0,:]
-        self.top[1,:] = refState.left[:,1]
+        self.top[1,:] = np.flip(refState.left[:,1])
         self.right[:,0] = refState.top[1,:]
-        self.bottom[0,:] = refState.right[:,0]
+        self.bottom[0,:] = np.flip(refState.right[:,0])
 
         # Rotate main face
         self.front = np.rot90(refState.front,axes=(1,0))
@@ -168,9 +168,9 @@ class cube:
         # Copy array to keep as reference
         refState = self.copy()
         # Rotate outer
-        self.left[:,1] = refState.top[1,:]
+        self.left[:,1] = np.flip(refState.top[1,:])
         self.top[1,:] = refState.right[:,0]
-        self.right[:,0] = refState.bottom[0,:]
+        self.right[:,0] = np.flip(refState.bottom[0,:])
         self.bottom[0,:] = refState.left[:,1]
 
         # Rotate main face
@@ -193,8 +193,8 @@ class cube:
         refState = self.copy()
         # Rotate outer
         self.front[:,0] = refState.top[:,0]
-        self.top[:,0] = refState.back[:,1]
-        self.back[:,1] = refState.bottom[:,0]
+        self.top[:,0] = np.flip(refState.back[:,1])
+        self.back[:,1] = np.flip(refState.bottom[:,0])
         self.bottom[:,0] = refState.front[:,0]
 
         # Rotate main face
@@ -210,8 +210,8 @@ class cube:
         # Rotate outer
         self.front[:,0] = refState.bottom[:,0]
         self.top[:,0] = refState.front[:,0]
-        self.back[:,1] = refState.top[:,0]
-        self.bottom[:,0] = refState.back[:,1]
+        self.back[:,1] = np.flip(refState.top[:,0])
+        self.bottom[:,0] = np.flip(refState.back[:,1])
 
         # Rotate main face
         self.left = np.rot90(refState.left, axes=(0,1))
@@ -238,7 +238,7 @@ class cube:
         self.right[0,:] = refState.front[0,:]
 
         # Rotate main face
-        self.top = np.rot90(refState.top, axes=(1,0))
+        self.top = np.rot90(refState.top, axes=(0,1))
         self.update_cubeState()
         # return "To be implemented"
 
@@ -254,6 +254,6 @@ class cube:
         self.left[0,:] = refState.front[0,:]
 
         # Rotate main face
-        self.top = np.rot90(refState.top, axes=(0,1))
+        self.top = np.rot90(refState.top, axes=(1,0))
         self.update_cubeState()
         # return "To be implemented"
