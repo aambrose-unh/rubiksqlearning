@@ -1,5 +1,7 @@
 import random
 import time
+import pickle
+from pathlib import Path
 import cube_sim
 
 class ApproximateQAgent():
@@ -22,8 +24,8 @@ class ApproximateQAgent():
         self.e_decay = float(e_decay)
         self.alpha = float(alpha)
         self.discount = float(gamma)
-        self.stateCounter = 0
-        self.p1 = [0,0,0,0]
+        self.stateCounter = dict()
+        self.metadata = dict()
 
         # self.weights = {'inv_cpf_front': .1, 'inv_cpf_top': .1, 'inv_cpf_bottom': .1,
         #     'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1,
@@ -34,11 +36,11 @@ class ApproximateQAgent():
         # self.weights = {'inv_cpf_front': .1, 'inv_cpf_top': .1, 'inv_cpf_bottom': .1,
         #     'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1,
         #     'inv_avg_cpf': .1}
-        # self.weights = {'inv_cpf_front': 0.1, 'inv_cpf_top': 0.1, 'inv_cpf_bottom': 0.1, 'inv_cpf_left': 0.1, 'inv_cpf_right': 0.1, 'inv_cpf_back': 0.1, 'inv_avg_cpf': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1, 'one_color_faces': .1}
+        self.weights = {'inv_cpf_front': 0.1, 'inv_cpf_top': 0.1, 'inv_cpf_bottom': 0.1, 'inv_cpf_left': 0.1, 'inv_cpf_right': 0.1, 'inv_cpf_back': 0.1, 'inv_avg_cpf': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1, 'one_color_faces': .1}
         # ALL FEATURES
-        self.weights = {'inv_cpf_front': 0.1, 'inv_cpf_top': 0.1, 'inv_cpf_bottom': 0.1, 'inv_cpf_left': 0.1, 'inv_cpf_right': 0.1, 'inv_cpf_back': 0.1, 'inv_avg_cpf': 0.1, 'one_color_faces': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1, 'flt': 0.1, 'frt': 0.1, 'flb': 0.1, 'frb': 0.1, 'blt': 0.1, 'brt': 0.1, 'blb': 0.1, 'brb': 0.1}
+        # self.weights = {'inv_cpf_front': 0.1, 'inv_cpf_top': 0.1, 'inv_cpf_bottom': 0.1, 'inv_cpf_left': 0.1, 'inv_cpf_right': 0.1, 'inv_cpf_back': 0.1, 'inv_avg_cpf': 0.1, 'one_color_faces': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1, 'flt': 0.1, 'frt': 0.1, 'flb': 0.1, 'frb': 0.1, 'blt': 0.1, 'brt': 0.1, 'blb': 0.1, 'brb': 0.1}
 
-        self.qvalues = dict()
+        # self.qvalues = dict()
 
     def getLegalActions(self,state):
         """
@@ -193,10 +195,10 @@ class ApproximateQAgent():
             self.weights[feature] / max_weight
 
         # Update state/action count
-        self.qvalues[(state)]
-
-        # CHECK HOW CORNERS ARE GETTING MESSED UP?????????!!!!!!!
-        ############### HOW ARE SAME COLORS ADJACENT, CORNERS SHOULD NOT CHANGE
+        if (state,action) in self.stateCounter:
+            self.stateCounter[(state,action)] += 1
+        else:
+            self.stateCounter[(state,action)] = 1
 
         # Update past actions list
         # self.p1 = {'p1_clockwise':0,'p1_counterclockwise':0,'p1_forward':0,'p1_backward':0,
@@ -216,11 +218,35 @@ class ApproximateQAgent():
         action(copy)
         return copy
 
-    def train(self):
-        
+    def save(self,fname,outpath=None):
+        if outpath != None:
+            print(f'Saving agent to {outpath}')
+            with open(outpath / f'{fname}.agent','wb') as f:
+                pickle.dump(self,f)
+        else:
+            print(f'Saving agent to working directory')
+            with open(f'{fname}.agent','wb') as f:
+                pickle.dump(self,f)
+
+    def load(self,fname,inpath=None):
+        try:
+            if inpath != None:
+                print(f'Loading agent from {inpath}')
+                with open(inpath / f'{fname}.agent','rb') as f:
+                    return pickle.load(f)
+            else:
+                print(f'Loading agent from working directory')
+                with open(f'{fname}.agent','rb') as f:
+                    return pickle.load(f)
+        except:
+            print('File Not Found')
+
+
+    def train(self,save_prefix='mdl_'):
+        start = time.time()
         # for number of sessions
         for sess in range(self.numTraining):
-            start = time.time()
+            train_start = time.time()
             if sess % 1 == 0:
                 print('On Training Session:',sess)
             # Instantiate and randomize cube
@@ -230,23 +256,23 @@ class ApproximateQAgent():
 
             # while goal state is false
             move = 0
-            prev_score = -.1
+            # prev_score = -.1
             reward=-.1
             while not self.isGoal(c):                
                 # Reward is living cost unless terminal state then reward is 100
                 if move % 10000 == 0:                
-                    print('\nOn Training Move:',move)
-                    print('Running Time: ',time.time() - start)
-                    # print('\nC to start')
-                    # c.showCube()
+                    print('\nTraining Session {}\nTraining Move: {}'.format(sess,move))
+                    print('Training Running Time: ',time.time() - train_start)
+                    print('Total Running Time: ',time.time() - start)
                     c.showCube()
                     print('\nReward: {:.3f}'.format(reward))
                     print('Weights: {}'.format(self.weights))
                     print('Espilon: {:.3f}'.format(self.epsilon))
+                    print('Number of States visited: {}\n'.format(len(self.stateCounter)))
 
 
                 if move > 10000000:
-                    return "Taking too long"
+                    return print("Taking too long - moves =",move)
 
                 action = self.getAction(c)
                 # c,nextState = self.getNextState(c,action)
@@ -264,26 +290,29 @@ class ApproximateQAgent():
                 # Reward is difference between last state and this state
                 # Score is sum of features
                 # reward = c.get_features()['one_color_faces'] - prev_score - .1
-                reward = c.get_features()['inv_avg_cpf']**2 - prev_score - .1
-                # reward = c.get_features()['inv_avg_cpf'] + c.get_features()['one_color_faces'] - prev_score - .1
+                # reward = c.get_features()['inv_avg_cpf']**2 - prev_score - .1
+                reward = c.get_features()['inv_avg_cpf'] + c.get_features()['one_color_faces'] - .1
                 # reward = -.1
                 if self.isGoal(nextState):
-                    print('GOAL HERE!!!!')
-                    reward = 100
+                    print('\nGOAL HERE!!!!')
+                    print('\nTraining Session {}\nTraining Move: {}'.format(sess,move))
+                    nextState.showCube()
+                    reward = 50
                 self.update(c, action, nextState, reward)
                 # if move % 5000 == 0:
                     # print('Updated Weights',self.weights)
                 # prev_score = c.get_features()['one_color_faces'] + c.get_features()['inv_avg_cpf']
                 # prev_score = c.get_features()['one_color_faces']
-                prev_score = c.get_features()['inv_avg_cpf']**2
+                # prev_score = c.get_features()['inv_avg_cpf']**2
                 # print('\nNext State right before assignment')
                 # nextState.showCube()
                 c = nextState
                 move+=1
-
-                # print('\nC = nextState')
-                # if move >= 5000:
-                #     c.showCube()
+            
+            # Save model after each completed training episode
+            print('Saving model')
+            self.metadata[f'ep_{sess}'] = {'MovesToGoal':move-1,'TotalRunTime':time.time() - start,'EpisodeRunTime':time.time() - train_start}
+            self.save(fname=f'{save_prefix}_episode_{sess}',outpath=Path('./outpath'))
 
 
     def solve(self,state,verbose = False, move_update=10, ret_moves=False):
@@ -311,5 +340,5 @@ class ApproximateQAgent():
 
         
 
-a = ApproximateQAgent(numTraining=10, epsilon=.75, alpha=0.1, gamma=.9, e_decay=.00001)
-a.train()
+# a = ApproximateQAgent(numTraining=10, epsilon=.75, alpha=0.1, gamma=.9, e_decay=.00001)
+# a.train()
