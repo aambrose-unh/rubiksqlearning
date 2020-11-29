@@ -114,6 +114,7 @@ class ApproximateQAgent():
         self.alpha = float(alpha)
         self.discount = float(gamma)
         self.stateCounter = 0
+        self.p1 = [0,0,0,0]
 
         # self.weights = {'inv_cpf_front': .1, 'inv_cpf_top': .1, 'inv_cpf_bottom': .1,
         #     'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1,
@@ -124,7 +125,9 @@ class ApproximateQAgent():
         # self.weights = {'inv_cpf_front': .1, 'inv_cpf_top': .1, 'inv_cpf_bottom': .1,
         #     'inv_cpf_left': .1, 'inv_cpf_right': .1, 'inv_cpf_back': .1,
         #     'inv_avg_cpf': .1}
-        self.weights = {'inv_cpf_front': 0.1, 'inv_cpf_top': 0.1, 'inv_cpf_bottom': 0.1, 'inv_cpf_left': 0.1, 'inv_cpf_right': 0.1, 'inv_cpf_back': 0.1, 'inv_avg_cpf': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1, 'one_color_faces': .1}
+        # self.weights = {'inv_cpf_front': 0.1, 'inv_cpf_top': 0.1, 'inv_cpf_bottom': 0.1, 'inv_cpf_left': 0.1, 'inv_cpf_right': 0.1, 'inv_cpf_back': 0.1, 'inv_avg_cpf': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1, 'one_color_faces': .1}
+        # ALL FEATURES
+        self.weights = {'inv_cpf_front': 0.1, 'inv_cpf_top': 0.1, 'inv_cpf_bottom': 0.1, 'inv_cpf_left': 0.1, 'inv_cpf_right': 0.1, 'inv_cpf_back': 0.1, 'inv_avg_cpf': 0.1, 'one_color_faces': 0.1, 'front_top': 0.1, 'front_bottom': 0.1, 'front_left': 0.1, 'front_right': 0.1, 'front_back': 0.1, 'top_bottom': 0.1, 'top_left': 0.1, 'top_right': 0.1, 'top_back': 0.1, 'bottom_left': 0.1, 'bottom_right': 0.1, 'bottom_back': 0.1, 'left_right': 0.1, 'left_back': 0.1, 'right_back': 0.1, 'flt': 0.1, 'frt': 0.1, 'flb': 0.1, 'frb': 0.1, 'blt': 0.1, 'brt': 0.1, 'blb': 0.1, 'brb': 0.1}
 
         self.qvalues = dict()
 
@@ -313,6 +316,11 @@ class ApproximateQAgent():
         max_weight = max(self.weights.values())
         for feature in self.weights: 
             self.weights[feature] / max_weight
+
+        # Update past actions list
+        self.p1 = {'p1_clockwise':0,'p1_counterclockwise':0,'p1_forward':0,'p1_backward':0,
+                    'p1_toLeft':0,'p1_toRight':0,}
+
         # return ('NOT DEFINED')
 
     def getNextState(self, state, action):
@@ -374,7 +382,8 @@ class ApproximateQAgent():
                 #     nextState.showCube()
                 # Reward is difference between last state and this state
                 # Score is sum of features
-                reward = c.get_features()['one_color_faces'] - prev_score - .1
+                # reward = c.get_features()['one_color_faces'] - prev_score - .1
+                reward = c.get_features()['inv_avg_cpf']**2 - prev_score - .1
                 # reward = c.get_features()['inv_avg_cpf'] + c.get_features()['one_color_faces'] - prev_score - .1
                 # reward = -.1
                 if self.isGoal(nextState):
@@ -384,7 +393,8 @@ class ApproximateQAgent():
                 # if move % 5000 == 0:
                     # print('Updated Weights',self.weights)
                 # prev_score = c.get_features()['one_color_faces'] + c.get_features()['inv_avg_cpf']
-                prev_score = c.get_features()['one_color_faces']
+                # prev_score = c.get_features()['one_color_faces']
+                prev_score = c.get_features()['inv_avg_cpf']**2
                 # print('\nNext State right before assignment')
                 # nextState.showCube()
                 c = nextState

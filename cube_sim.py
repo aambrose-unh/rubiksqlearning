@@ -69,14 +69,17 @@ class cube:
             num_col1 = 1/len(np.unique(self.faces[i[1]]))
             feat_vector[i[0]+'_'+i[1]] = num_col0*num_col1
 
-        # # MAYBE ADD INTERACTION EFFECTS??????????????
-        # feat_vector['ft'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
-        # feat_vector['fbo'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
-        # feat_vector['fbo'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
-        # feat_vector['fl'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
-        # feat_vector['fr'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
-        # feat_vector['fba'] = 1/len(np.unique(self.faces[front])) * 1/len(np.unique(self.faces[top]))
+        # Corners
+        feat_vector['flt'] = len(np.unique([self.front[0,0],self.left[0,1],self.top[1,0]]))/3
+        feat_vector['frt'] = len(np.unique([self.front[0,1],self.right[0,0],self.top[1,1]]))/3
+        feat_vector['flb'] = len(np.unique([self.front[1,0],self.left[1,1],self.bottom[0,0]]))/3
+        feat_vector['frb'] = len(np.unique([self.front[1,1],self.right[1,0],self.bottom[0,1]]))/3
+        feat_vector['blt'] = len(np.unique([self.back[0,1],self.left[0,0],self.top[0,0]]))/3
+        feat_vector['brt'] = len(np.unique([self.back[0,0],self.right[0,1],self.top[0,1]]))/3
+        feat_vector['blb'] = len(np.unique([self.back[1,1],self.left[1,0],self.bottom[1,0]]))/3
+        feat_vector['brb'] = len(np.unique([self.back[1,0],self.right[1,1],self.bottom[1,1]]))/3
 
+        # Maybe check for patterns of previous moves????
 
         return feat_vector
 
