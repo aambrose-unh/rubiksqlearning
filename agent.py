@@ -89,6 +89,8 @@ class ApproximateQAgent():
         # Maybe add interaction features for each past move and inv_avg_cpf to say something
         # about the states during each move?
 
+        # Maybe add interaction between move and each other move?
+
         # tot_cpf = 0
         # one_color_face = 0
         # # for face in copy.faces:
