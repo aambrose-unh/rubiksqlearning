@@ -59,14 +59,6 @@ class ApproximateQAgent:
 
         # self.qvalues = dict()
 
-    def getLegalActions(self, state):
-        """
-        Get the actions available for a given
-        state. This is what you should use to
-        obtain legal actions for a state
-        """
-        return self.getActions(state)
-
     def isGoal(self, state):
         if len(self.getActions(state)) == 0:
             return True
@@ -140,7 +132,7 @@ class ApproximateQAgent:
     def getWeights(self):
         return self.weights
 
-    def getQValue(self, state, action):
+    def getQ(self, state, action):
         """
         Should return Q(state,action) = w * featureVector
         where * is the dotProduct operator
@@ -156,21 +148,15 @@ class ApproximateQAgent:
             sum += weightVector[feature] * featureVector[feature]
         return sum
 
-    def computeActionFromQValues(self, state):
-        """
-        Compute the best action to take in a state.  Note that if there
-        are no legal actions, which is the case at the terminal state,
-        you should return None.
-        """
-        "*** YOUR CODE HERE ***"
-        # Get list of legal actions
-        actions = self.getLegalActions(state)
+    def getPolicy(self, state):
+        # Get list of actions
+        actions = self.getActions(state)
         # Compute Q-values for each possible action and take max
         # max Q(s',a')
         max_action = [(None, -999999)]
         for action in actions:
             # get current qvalue of s from taking action
-            val = self.getQValue(state, action)
+            val = self.getQ(state, action)
             # if the current action has a higher qval than the current max,
             # replace current max/action
             if (max_action[0][0] is None) or (val > max_action[0][1]):
@@ -183,32 +169,20 @@ class ApproximateQAgent:
         action_to_return = random.choice(max_action)[0]
         return action_to_return
 
-    def computeValueFromQValues(self, state):
-        """
-        Returns max_action Q(state,action)
-        where the max is over legal actions.  Note that if
-        there are no legal actions, which is the case at the
-        terminal state, you should return a value of 0.0.
-        """
+    def getQPrime(self, state):
         # Initialize to zero - return zero if no legal actions
         max_action = 0
         # Get legal actions
-        actions = self.getLegalActions(state)
+        actions = self.getActions(state)
         # If there are legal actions, reset max_action to very negative number
         # and get max q-value for the set of actions
         if len(actions) > 0:
             max_action = -99999999
             for action in actions:
-                Qval = self.getQValue(state, action)
+                Qval = self.getQ(state, action)
                 if Qval > max_action:
                     max_action = Qval
         return max_action
-
-    def getValue(self, state):
-        return self.computeValueFromQValues(state)
-
-    def getPolicy(self, state):
-        return self.computeActionFromQValues(state)
 
     def getAction(self, state):
         """
@@ -219,7 +193,7 @@ class ApproximateQAgent:
         should choose None as the action.
         """
         # Pick Action
-        legalActions = self.getLegalActions(state)
+        actions = self.getActions(state)
         action = None
 
         # Epsilon decay
@@ -229,12 +203,10 @@ class ApproximateQAgent:
         if len(legalActions) > 0:
             # Boolean to decide if taking a random action or not
             take_random = random.random() < self.epsilon
-            # print(take_random)
             if take_random is True:
-                action = random.choice(legalActions)
+                action = random.choice(actions)
             else:
                 action = self.getPolicy(state)
-            # print(action)
         return action
 
     def getRewards(self, state):
@@ -250,14 +222,12 @@ class ApproximateQAgent:
             return reward
 
     def update(self, state, action, nextState, reward):
-        """
-        Should update your weights based on transition
-        """
         # w_i = w_i + learning_rate * difference * f_i(s,a)
         # difference = [R + discount * max Q(s',a')] - Q(s,a)
+        
         difference = (
-            reward + self.discount * self.getValue(nextState)
-        ) - self.getQValue(state, action)
+            reward + self.discount * self.getQPrime(nextState)
+        ) - self.getQ(state, action)
         featureVector = self.getFeatures(state, action)
         for feature in featureVector:
             self.weights[feature] = (
