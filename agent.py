@@ -5,6 +5,8 @@ from pathlib import Path
 import numpy as np
 import itertools
 import cube_sim
+import datetime
+import copy
 
 
 class ApproximateQAgent:
@@ -238,10 +240,16 @@ class ApproximateQAgent:
 
     def getRewards(self, state):
         if self.isGoal(state):
-            return 5000.0
+            return 1000.0
         else:
             living_tax = 1
-            reward = sum(i for i in self.getFeatures(state).values()) - living_tax
+            fl = self.getFeatures(state)["full_layers"] * 10
+            ocf = self.getFeatures(state)["one_color_face"] * 6
+            twcf = self.getFeatures(state)["two_color_face"] * 3
+            thcf = self.getFeatures(state)["three_color_face"] * 1
+            reward = fl + ocf + twcf + thcf - living_tax
+            # reward = sum(i for i in self.getFeatures(state).values()) - living_tax
+
             return reward
 
     def update(self, state, action, nextState, reward):
@@ -294,10 +302,15 @@ class ApproximateQAgent:
         except:
             print("File Not Found")
 
-    def train(self, save_prefix="mdl_", moves_per_ep=500):
+    def train(self, save_prefix="mdl_", moves_per_ep=1000):
+        print("Starting Training")
         start = time.time()
+        if len(self.metadata) > 1:
+            start_sess = max([int(i[3:]) for i in self.metadata.keys()])
+        else:
+            start_sess = 1
         # for number of sessions
-        for sess in range(self.numTraining):
+        for sess in range(start_sess, start_sess + self.numTraining + 1):
             self.episodeRewards = 0
             train_start = time.time()
             # if sess % 1000 == 0:
@@ -331,15 +344,17 @@ class ApproximateQAgent:
                 if self.isGoal(c):
                     print("\nGOAL !!!!")
                     print("\nTraining Session {}\nTraining Move: {}".format(sess, move))
+                    print(datetime.datetime.now())
                     # if nextState is goal add the rewards from the goal state
                     self.episodeRewards += self.getRewards(c)
                     c.showCube()
                 move += 1
 
             # Save model after each completed training episode
-            if sess % 500 == 0:
+            if sess % 1000 == 0:
                 print("\nOn Training Session:", sess)
                 print("Total Running Time: ", time.time() - start)
+                print(datetime.datetime.now())
                 print("Epsilon", self.epsilon)
                 print("Saving model")
                 self.save(
@@ -353,14 +368,17 @@ class ApproximateQAgent:
                 "EpisodeRunTime": time.time() - train_start,
             }
 
-    def solve(self, state, verbose=False, move_update=10000, ret_moves=False):
+    def solve(
+        self, state, max_moves=10000, verbose=False, move_update=5000, ret_moves=False
+    ):
         c = state.copy()
         print("Starting State:")
         start = time.time()
         c.showCube()
         move_list = []
+        solved = 0
         move = 0
-        while self.isGoal(c) is False:
+        while (self.isGoal(c) is False) and (move < max_moves):
             if move % move_update == 0:
                 print("\nOn Move", move)
                 print("Run time:", time.time() - start)
@@ -374,31 +392,70 @@ class ApproximateQAgent:
                 move_list.append(action)
             move += 1
         runtime = time.time() - start
-        print("SOLVED:")
-        print("\nOn Move", move)
+        if self.isGoal(c):
+            solved = 1
+            print("SOLVED:")
+            print("\nOn Move", move)
+        else:
+            print("Hit max moves:", max_moves)
         print("Total Run time:", runtime)
+        print(datetime.datetime.now())
         # c.showCube()
-        to_ret = move, runtime
+        to_ret = move, runtime, solved, c
         if ret_moves is True:
             return move_list, to_ret
+        return to_ret
 
 
 class evaluator:
-    def __init__(self, numIterations=100):
+    def __init__(self, agent, numIterations=100):
         self.numIterations = int(numIterations)
         self.eval_data = dict()
+        # self.agent = copy.deepcopy(agent)
+        self.agent = agent
 
-    def run(self, agent):
+    def run(self):
         # For num of iterations, solve cubes and record info
+        print("Begin Evaluation")
         for iter in range(self.numIterations):
             print("Starting iteration", iter)
             c = cube_sim.cube()
             c.randomize()
-            moves, runtime = agent.solve(c)
+            startCube = c.copy()
+            moves, runtime, solved, endCube = self.agent.solve(
+                c, max_moves=5000, verbose=False, move_update=6000
+            )
             self.eval_data[f"iter{iter}"] = {
-                "MovesToSolve": moves,
-                "TimeToSolve": runtime,
+                "MovesInIter": moves,
+                "TimeToRun": runtime,
+                "Solved": solved,
+                "StartCube": startCube,
+                "EndCube": endCube,
             }
+
+    def save(self, fname, outpath=None):
+        if outpath is not None:
+            print(f"Saving eval to {outpath}")
+            with open(outpath / f"{fname}.eval", "wb") as f:
+                pickle.dump(self, f)
+        else:
+            print("Saving eval to working directory")
+            with open(f"{fname}.eval", "wb") as f:
+                pickle.dump(self, f)
+
+    def load(self, fname, inpath=None):
+        try:
+            if inpath is not None:
+                print(f"Loading eval from {inpath}")
+                with open(inpath / f"{fname}.eval", "rb") as f:
+                    return pickle.load(f)
+                    # self = pickle.load(f)
+            else:
+                print("Loading eval from working directory")
+                with open(f"{fname}.eval", "rb") as f:
+                    return pickle.load(f)
+        except:
+            print("File Not Found")
 
 
 # a = ApproximateQAgent(numTraining=10, epsilon=.75, alpha=0.1, gamma=.9, e_decay=.00001)
