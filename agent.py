@@ -6,7 +6,6 @@ import numpy as np
 import itertools
 import cube_sim
 import datetime
-import copy
 
 
 class ApproximateQAgent:
@@ -84,10 +83,10 @@ class ApproximateQAgent:
         Return features of the cube state after action
         """
         # create a copy to perform action on to get new features after action
-        copy = state.copy()
+        stateCopy = state.copy()
         if action is not None:
             # perform action on copy
-            action(copy)
+            action(stateCopy)
 
         feat_vector = dict()
         feat_vector["full_layers"] = 0
@@ -97,9 +96,9 @@ class ApproximateQAgent:
         two_color_face = 0
         three_color_face = 0
         four_color_face = 0
-        for face in copy.faces:
+        for face in stateCopy.faces:
             # calc colors per face
-            num_col = len(np.unique(copy.faces[face]))
+            num_col = len(np.unique(stateCopy.faces[face]))
             tot_cpf += num_col
             # Add 1/color for that face to feature vector
             # feat_vector[f'inv_cpf_{face}'] = (1/num_col)
@@ -107,7 +106,7 @@ class ApproximateQAgent:
             if num_col == 1:
                 one_color_face += 1
                 full_layer = 1
-                for adj in copy.adjacent[face]:
+                for adj in stateCopy.adjacent[face]:
                     if len(np.unique(adj)) > 1:
                         full_layer = 0
                         break
@@ -127,9 +126,9 @@ class ApproximateQAgent:
         feat_vector["four_color_face"] = four_color_face
 
         # Unique colors amongst paired faces
-        for i in itertools.combinations(copy.faces, r=2):
+        for i in itertools.combinations(stateCopy.faces, r=2):
             feat_vector[i[0] + "_" + i[1]] = 1 / len(
-                np.unique(np.append(copy.faces[i[0]], copy.faces[i[1]]))
+                np.unique(np.append(stateCopy.faces[i[0]], stateCopy.faces[i[1]]))
             )
 
         # Adjacent pair check
@@ -248,8 +247,6 @@ class ApproximateQAgent:
             twcf = self.getFeatures(state)["two_color_face"] * 3
             thcf = self.getFeatures(state)["three_color_face"] * 1
             reward = fl + ocf + twcf + thcf - living_tax
-            # reward = sum(i for i in self.getFeatures(state).values()) - living_tax
-
             return reward
 
     def update(self, state, action, nextState, reward):
@@ -266,17 +263,17 @@ class ApproximateQAgent:
             self.weights[feature] = (
                 self.weights[feature] + self.alpha * difference * featureVector[feature]
             )
-        # Normalize to prevent divergence?
+        # Normalize to prevent divergence
         max_weight = max(self.weights.values())
         for feature in self.weights:
             self.weights[feature] / max_weight
 
     def getNextState(self, state, action):
         # create a copy to perform action on to get new features after action
-        copy = state.copy()
+        stateCopy = state.copy()
         # perform action on copy
-        action(copy)
-        return copy
+        action(stateCopy)
+        return stateCopy
 
     def save(self, fname, outpath=None):
         if outpath is not None:
@@ -313,28 +310,14 @@ class ApproximateQAgent:
         for sess in range(start_sess, start_sess + self.numTraining + 1):
             self.episodeRewards = 0
             train_start = time.time()
-            # if sess % 1000 == 0:
-            #     print("On Training Session:", sess)
-            #     print("Total Running Time: ", time.time() - start)
             # Instantiate and randomize cube
             c = cube_sim.cube()
-            # Select random initial state
             c.randomize()
 
-            # while goal state is false
+            # while goal state is false, continue updating weights
             move = 0
-            # prev_score = -.1
             reward = -0.1
             while (not self.isGoal(c)) and (move < moves_per_ep):
-                # if move % 10000 == 0:
-                #     print("\nTraining Session {}\nTraining Move: {}".format(sess, move))
-                #     print("Training Running Time: ", time.time() - train_start)
-                #     print("Total Running Time: ", time.time() - start)
-                #     c.showCube()
-                #     print("\nReward: {:.3f}".format(reward))
-                #     print("Weights: {}".format(self.weights))
-                #     print("Espilon: {:.3f}".format(self.epsilon))
-
                 action = self.getAction(c)
                 nextState = self.getNextState(c, action)
                 reward = self.getRewards(c)
@@ -351,7 +334,7 @@ class ApproximateQAgent:
                 move += 1
 
             # Save model after each completed training episode
-            if sess % 1000 == 0:
+            if sess % 250 == 0:
                 print("\nOn Training Session:", sess)
                 print("Total Running Time: ", time.time() - start)
                 print(datetime.datetime.now())
@@ -366,6 +349,7 @@ class ApproximateQAgent:
                 "Weights": self.weights,
                 "TotalRunTime": time.time() - start,
                 "EpisodeRunTime": time.time() - train_start,
+                "EndEpsilon": self.epsilon
             }
 
     def solve(
@@ -400,7 +384,6 @@ class ApproximateQAgent:
             print("Hit max moves:", max_moves)
         print("Total Run time:", runtime)
         print(datetime.datetime.now())
-        # c.showCube()
         to_ret = move, runtime, solved, c
         if ret_moves is True:
             return move_list, to_ret
@@ -411,7 +394,6 @@ class evaluator:
     def __init__(self, agent, numIterations=100):
         self.numIterations = int(numIterations)
         self.eval_data = dict()
-        # self.agent = copy.deepcopy(agent)
         self.agent = agent
 
     def run(self):
@@ -449,7 +431,6 @@ class evaluator:
                 print(f"Loading eval from {inpath}")
                 with open(inpath / f"{fname}.eval", "rb") as f:
                     return pickle.load(f)
-                    # self = pickle.load(f)
             else:
                 print("Loading eval from working directory")
                 with open(f"{fname}.eval", "rb") as f:
