@@ -304,7 +304,7 @@ class ApproximateQAgent:
                 move += 1
 
             # Save model after each completed training episode
-            if sess % 250 == 0:
+            if sess % 5 == 0:
                 print("\nOn Training Session:", sess)
                 print("Total Running Time: ", time.time() - start)
                 print(datetime.datetime.now())

@@ -8,7 +8,7 @@ The objectives for this project were:
 1. Evaluate the reinforcement learning agent as compared to an agent that randomly selects moves to make
 
 # Basic Project Information
-The environment was created using pipenv. With pipenv and python 3.9 installed, this repo can be downloaded and the command `pipenv install` can be ran in the console within the project directory to replicate the virtual environment.
+The environment was created using pipenv. With pipenv and python 3.9 installed, this repo can be downloaded and the command `pipenv shell` can be ran in the console within the project directory. This sets that console to run inside the virtual environment.
 
 
 # Training
@@ -23,7 +23,7 @@ The environment was created using pipenv. With pipenv and python 3.9 installed, 
     - `a.train(save_prefix='12_05_v1')`
         - Use the agent.run() method
 
-- Useful methods:
+Useful methods:
  - `agent.save(fname, outpath)`
     - Saves current state of agent
 - `agent.load(fname, inpath)`
