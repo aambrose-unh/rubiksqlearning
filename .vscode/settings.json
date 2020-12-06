@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "C:\\Users\\aambr\\AppData\\Local\\Programs\\Python\\Python37-32\\python.exe",
+    "python.pythonPath": "C:\\Users\\aambr\\.virtualenvs\\rubiksqlearning-tbF5eJgs\\Scripts\\python.exe",
     "python.formatting.provider": "black"
 }

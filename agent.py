@@ -200,7 +200,7 @@ class ApproximateQAgent:
         if self.epsilon > 0.1:
             self.epsilon = self.epsilon ** (1 + self.e_decay)
         # With prob epsilon, take a random action
-        if len(legalActions) > 0:
+        if len(actions) > 0:
             # Boolean to decide if taking a random action or not
             take_random = random.random() < self.epsilon
             if take_random is True:
@@ -224,10 +224,10 @@ class ApproximateQAgent:
     def update(self, state, action, nextState, reward):
         # w_i = w_i + learning_rate * difference * f_i(s,a)
         # difference = [R + discount * max Q(s',a')] - Q(s,a)
-        
-        difference = (
-            reward + self.discount * self.getQPrime(nextState)
-        ) - self.getQ(state, action)
+
+        difference = (reward + self.discount * self.getQPrime(nextState)) - self.getQ(
+            state, action
+        )
         featureVector = self.getFeatures(state, action)
         for feature in featureVector:
             self.weights[feature] = (
@@ -319,7 +319,7 @@ class ApproximateQAgent:
                 "Weights": self.weights,
                 "TotalRunTime": time.time() - start,
                 "EpisodeRunTime": time.time() - train_start,
-                "EndEpsilon": self.epsilon
+                "EndEpsilon": self.epsilon,
             }
 
     def solve(
@@ -366,16 +366,21 @@ class evaluator:
         self.eval_data = dict()
         self.agent = agent
 
-    def run(self):
+    def run(self, save_prefix="eval_", max_moves=100):
         # For num of iterations, solve cubes and record info
         print("Begin Evaluation")
-        for iter in range(self.numIterations):
+        if len(self.eval_data) > 1:
+            start_sess = max([int(i[4:]) for i in self.eval_data.keys()])
+        else:
+            start_sess = 1
+        # for number of sessions
+        for iter in range(start_sess, start_sess + self.numIterations + 1):
             print("Starting iteration", iter)
             c = cube_sim.cube()
             c.randomize()
             startCube = c.copy()
             moves, runtime, solved, endCube = self.agent.solve(
-                c, max_moves=5000, verbose=False, move_update=6000
+                c, max_moves=max_moves, verbose=False, move_update=6000
             )
             self.eval_data[f"iter{iter}"] = {
                 "MovesInIter": moves,
@@ -384,6 +389,8 @@ class evaluator:
                 "StartCube": startCube,
                 "EndCube": endCube,
             }
+            if iter % 100 == 0:
+                self.save(fname=f"{save_prefix}iter_{iter}", outpath=Path("./output"))
 
     def save(self, fname, outpath=None):
         if outpath is not None:
