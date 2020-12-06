@@ -21,13 +21,13 @@ The environment was created using pipenv. With pipenv and python 3.9 installed, 
         - e_decay = rate of decay for epsilon during training
 1. Train agent
     - `a.train(save_prefix='12_05_v1')`
-        - Use the agent.run() method
+        - save_prefix = the prefix to put at the beginning of the saved filename to differentiate the file
 
 Useful methods:
  - `agent.save(fname, outpath)`
     - Saves current state of agent
 - `agent.load(fname, inpath)`
-    - Saves current state of agent
+    - Loads a saved agent
 - `agent.solve(state, max_moves=10000, verbose=False, move_update=5000, ret_moves=False)`
     - Will solve a cube using the agent's policy
 
